@@ -1,7 +1,6 @@
 #include "config.h"
-#include "debug.h"
 #include "SoftwareSerial.h"
-#include "ibus.h"
+#include "ibus_interface.h"
 #include "activityled.h"
 
 #ifdef DEBUG_ENABLE
@@ -10,7 +9,7 @@
   SoftwareSerial debug(DEBUG_RX, DEBUG_TX);
 #endif
 
-Ibus ibus;
+IbusInterface ibus;
 
 ActivityLed activityLed(13);
 
@@ -19,7 +18,6 @@ void setup() {
   
   #ifdef DEBUG_ENABLE
     debug.begin(9600);
-    debug.println("DEBUG ENABLED");
   #endif
 }
 

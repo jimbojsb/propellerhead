@@ -1,11 +1,13 @@
 #define IBUS_PACKET_DELAY 11
 
-class Ibus {
+class IbusInterface {
   private:
     unsigned long previousMillis;
-    int incomingData;
-  
+    int data[32];
+    int index;
+    void reset();
+    void parsePacket();
   public:
-    Ibus();  
+    IbusInterface();  
     void process(unsigned long millis);
 };
