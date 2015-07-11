@@ -5,8 +5,7 @@ class IbusInterface {
     unsigned long previousMillis;
     int data[32];
     int index;
-    void reset();
-    void parsePacket();
+    bool parsePacket();
   public:
     IbusInterface();  
     void process(unsigned long millis);

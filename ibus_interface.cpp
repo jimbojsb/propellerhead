@@ -21,20 +21,20 @@ void IbusInterface::process(unsigned long millis) {
     int incoming = Serial.read();
     this->data[this->index] = incoming;
     debug.println(incoming, HEX);
-    this->parsePacket();
-    this->index++;
-    activityLed.blink(millis);
+    bool foundPacket = this->parsePacket();
+    if (foundPacket) {
+        activityLed.blink(millis);
+    } else {
+      this->index++;
+    }
   }
   this->previousMillis = millis;
 }
 
-void IbusInterface::parsePacket() {
-  debug.println("parse");
+bool IbusInterface::parsePacket() {
   if (this->index >= 4) { // enough bytes to make a packet
-    debug.println("long enough");
     int length = this->data[1];
      if (this->index - 1 == length) { // enough bytes to satisfy the hypothetical packet
-       debug.println("make packet");
        int source = this->data[0];
        int dest = this->data[2];
        int checksum = this->data[this->index];
@@ -44,19 +44,14 @@ void IbusInterface::parsePacket() {
          message[i] = this->data[3 + i];
        }
        IbusPacket packet(source, length, dest, message);
-       debug.println("packet checksum");
-       debug.println(packet.checksum, HEX);
        if (packet.isValid(checksum)) {
          debug.println("Valid packet found");  
-         this->reset();
+         this->index = 0;
+         return true;
        } else {
          debug.println("packet not valid");
        }
      }
   }
-}
-
-void IbusInterface::reset() {
-    this->index = 0;
-    debug.println("reset");
+  return false;
 }
