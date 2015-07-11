@@ -1,20 +1,27 @@
-#include "debug.h"
 #include "ibus.h"
 #include "arduino.h"
+#include "SoftwareSerial.h"
+#include "config.h"
+#include "activityled.h"
+
+#ifdef DEBUG_ENABLE
+  extern SoftwareSerial debug;
+#endif
+
+extern ActivityLed activityLed;
 
 Ibus::Ibus() {
 }
 
-void Ibus::init() {
-  Serial.begin(9600, SERIAL_8E1);
-}
-
-void Ibus::process(int millis) {
+void Ibus::process(unsigned long millis) {
   if (Serial.available()) {
     this->incomingData = Serial.read();
     #ifdef DEBUG_ENABLE
-      debug.println(this->incomingData, HEX);
+      char hexVal[3];
+      sprintf(hexVal, "%02x ", this->incomingData);
+      debug.print(hexVal);
     #endif
+    activityLed.blink(millis);
   }
 }
 

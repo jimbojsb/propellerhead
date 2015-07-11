@@ -2,11 +2,10 @@
 
 class Ibus {
   private:
-    int previousMillis;
+    unsigned long previousMillis;
     int incomingData;
   
   public:
     Ibus();  
-    void init();
-    void process(int millis);
+    void process(unsigned long millis);
 };
