@@ -2,6 +2,7 @@
 #include "SoftwareSerial.h"
 #include "ibus_interface.h"
 #include "activityled.h"
+#include "ibus_dispatcher.h"
 
 #ifdef DEBUG_ENABLE
   #define DEBUG_RX 11
@@ -9,7 +10,8 @@
   SoftwareSerial debug(DEBUG_RX, DEBUG_TX);
 #endif
 
-IbusInterface ibus;
+IbusInterface ibusInterface;
+IbusDispatcher ibusDispatcher;
 
 ActivityLed activityLed(13);
 
@@ -24,5 +26,6 @@ void setup() {
 void loop() { 
   int currentMillis = millis();
   activityLed.update(currentMillis);
-  ibus.process(currentMillis);
+  ibusInterface.update(currentMillis);
+  ibusDispatcher.update(currentMillis);
 }

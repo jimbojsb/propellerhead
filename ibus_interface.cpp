@@ -11,22 +11,27 @@
 #endif
 
 extern ActivityLed activityLed;
+extern IbusDispatcher ibusDispatcher;
 
 IbusInterface::IbusInterface() {
   this->index = 0;
+  this->busQuietMillis = 0;
+  this->packetToSendIndex = -1;
 }
 
-void IbusInterface::process(unsigned long millis) { 
+void IbusInterface::update(unsigned long millis) { 
   if (Serial.available()) {
     int incoming = Serial.read();
     this->data[this->index] = incoming;
-    debug.println(incoming, HEX);
     bool foundPacket = this->parsePacket();
     if (foundPacket) {
         activityLed.blink(millis);
     } else {
       this->index++;
     }
+    this->busQuietMillis = 0;
+  } else {
+    this->busQuietMillis += millis - this->previousMillis;
   }
   this->previousMillis = millis;
 }
@@ -47,6 +52,7 @@ bool IbusInterface::parsePacket() {
        if (packet.isValid(checksum)) {
          debug.println("Valid packet found");  
          this->index = 0;
+         ibusDispatcher.dispatch(&packet);
          return true;
        } else {
          debug.println("packet not valid");
@@ -54,4 +60,18 @@ bool IbusInterface::parsePacket() {
      }
   }
   return false;
+}
+
+void IbusInterface::send(IbusPacket *packet) {
+    Serial.write(packet->source);
+    Serial.write(packet->length);
+    Serial.write(packet->destination);
+    for (int i = 0; i < packet->length - 2; i++) {
+      Serial.write(packet->message[i]);  
+    }
+    Serial.write(packet->checksum);
+}
+
+void IbusInterface::sendPendingPackets() {
+
 }

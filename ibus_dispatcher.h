@@ -3,7 +3,11 @@
 class IbusDispatcher {
   private:
     unsigned long previousMillis;
+    unsigned long previousCdPlayerAnnounceMillis;
+    bool cdPlayerHasBeenPolled;
+    
   public:
     IbusDispatcher();
-    void dispatch(unsigned long millis, IbusPacket *packet);
+    void dispatch(IbusPacket *packet);
+    void update(unsigned long millis);
 };

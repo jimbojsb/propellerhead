@@ -1,4 +1,10 @@
 #include "ibus_packet.h"
+#include "SoftwareSerial.h"
+
+extern SoftwareSerial debug;
+
+IbusPacket::IbusPacket() {
+}
 
 IbusPacket::IbusPacket(int source, int length, int destination, int message[]) {
   this->source = source;
@@ -10,6 +16,18 @@ IbusPacket::IbusPacket(int source, int length, int destination, int message[]) {
 
 bool IbusPacket::isValid(int checksum) {
   return checksum == this->checksum;
+}
+
+bool IbusPacket::messageEquals(int message[]) {
+  int messageLength = sizeof(message) / sizeof(int);
+  if (this->length - 2 == messageLength) {
+    for (int i = 0; i < messageLength; i++) {
+      if (this->message[i] != message[i]) {
+        return false;
+      }
+    }   
+  }
+  return true;
 }
 
 void IbusPacket::calculateChecksum() {

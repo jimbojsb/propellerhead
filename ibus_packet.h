@@ -11,9 +11,11 @@ class IbusPacket {
     int length;
     int checksum;
     int *message;
-    
+    IbusPacket();
     IbusPacket(int source, int length, int destination, int message[]);
     bool isValid(int checksum);
+    bool messageEquals(int message[]);
+    
     
 };
 
