@@ -1,31 +1,19 @@
-#include "config.h"
-#include "SoftwareSerial.h"
-#include "ibus_interface.h"
-#include "activityled.h"
-#include "ibus_dispatcher.h"
+#include <EEPROM.h>
+#include <SparkFunbc127.h>
+#include <SoftwareSerial.h>
 
-#ifdef DEBUG_ENABLE
-  #define DEBUG_RX 11
-  #define DEBUG_TX 10
-  SoftwareSerial debug(DEBUG_RX, DEBUG_TX);
-#endif
-
-IbusInterface ibusInterface;
-IbusDispatcher ibusDispatcher;
-
-ActivityLed activityLed(13);
+SoftwareSerial btControl(2,3);
+SoftwareSerial phControl(4,5);
+BC127 btModule(&btControl);
 
 void setup() {
   Serial.begin(9600, SERIAL_8E1);
-  
-  #ifdef DEBUG_ENABLE
-    debug.begin(9600);
-  #endif
+  phControl.begin(9600);
+  btControl.begin(9600);
 }
 
 void loop() { 
-  int currentMillis = millis();
-  activityLed.update(currentMillis);
-  ibusInterface.update(currentMillis);
-  ibusDispatcher.update(currentMillis);
+  unsigned long currentMillis = millis();
+  activityLedReset(currentMillis);
+  ibusUpdate(currentMillis);  
 }
