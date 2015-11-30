@@ -1,7 +1,0 @@
-#define IBUS_CDPLAYER 0x18
-#define IBUS_RADIO 0x68
-#define IBUS_NAV 0x3B
-#define IBUS_MFW 0x50
-#define IBUS_BOARDMONITOR 0xF0
-#define IBUS_IKE 0x80
-#define IBUS_BROADCAST 0x80

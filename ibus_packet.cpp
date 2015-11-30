@@ -1,21 +1,26 @@
 #include "ibus_packet.h"
-#include "SoftwareSerial.h"
-
-extern SoftwareSerial debug;
 
 IbusPacket::IbusPacket() {
 }
 
-IbusPacket::IbusPacket(int source, int length, int destination, int message[]) {
+IbusPacket::IbusPacket(int source, int destination, int message[]) {
+  this->source = source;
+  this->destination = destination;
+  this->message = message;
+  this->length = sizeof(message) / sizeof(message[0]);
+  this->checksum = IbusPacket::calculateChecksum(source, length, destination, message);
+}
+
+IbusPacket::IbusPacket(int source, int length, int destination, int message[], int checksum) {
   this->source = source;
   this->destination = destination;
   this->message = message;
   this->length = length;
-  this->calculateChecksum();
+  this->checksum = checksum;
 }
 
-bool IbusPacket::isValid(int checksum) {
-  return checksum == this->checksum;
+bool IbusPacket::isValid() {
+  return this->checksum == IbusPacket::calculateChecksum(this->source, this->length, this->destination, this->message);
 }
 
 bool IbusPacket::messageEquals(int message[]) {
@@ -30,14 +35,45 @@ bool IbusPacket::messageEquals(int message[]) {
   return true;
 }
 
-void IbusPacket::calculateChecksum() {
+bool IbusPacket::isEqualTo(IbusPacket *pkt) {
+  bool identical = (
+    this->source == pkt->source &&
+    this->length == pkt->length &&
+    this->destination == pkt->destination &&
+    this->checksum == pkt->checksum
+  );
+  return identical;
+}
+
+int IbusPacket::calculateChecksum(int source, int length, int destination, int message[]) {
   int checksum;
-  checksum ^= this->source;
-  checksum ^= this->length;
-  checksum ^= this->destination;
-  for (int i = 0; i < this->length - 2; i++) {
-    checksum ^= this->message[i];
+  checksum ^= source;
+  checksum ^= length;
+  checksum ^= destination;
+  for (int i = 0; i < length - 2; i++) {
+    checksum ^= message[i];
   }  
-  this->checksum = checksum;
+  return checksum;
+}
+
+String IbusPacket::asString() {
+  String output = "";
+  output += this->intToHexString(this->source) + " ";
+  output += this->intToHexString(this->length) + " ";
+  output += this->intToHexString(this->destination) + " ";
+  int messageLength = this->length - 2;
+  for (int i = 0; i < messageLength; i++) {
+    output += this->intToHexString(this->message[i]) + " ";
+  }
+  output += this->intToHexString(this->checksum) + " ";
+  return output;
+}
+
+String IbusPacket::intToHexString(int i) {
+  String retval(i, HEX);
+  if (i < 10) {
+    retval = "0" + retval;
+  }
+  return retval;
 }
 
