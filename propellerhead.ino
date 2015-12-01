@@ -16,7 +16,7 @@ void setup() {
   phControl.begin(9600);
   btControl.begin(9600);
 
-  phControl.println("booted");
+  phControl.println(F("booted"));
 }
 
 void loop() { 

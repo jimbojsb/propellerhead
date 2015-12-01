@@ -21,21 +21,22 @@ class IbusInterface {
     unsigned long currentMillis;
     unsigned long cdPlayerPreviousMillis;
     unsigned long busPreviousMillis;
+    unsigned long collisionPreviousMillis;
     int busQuietMillis;
-    QueueArray <IbusPacket *> *sendQueue;
-    QueueArray <IbusPacket *> *dispatchQueue;
+    QueueArray <IbusPacket> *sendQueue;
+    QueueArray <IbusPacket> *dispatchQueue;
     bool awaitingSendVerification;
     int receiveQueue[32];
     int receiveQueueLength;
     bool parsePacket();
-    void handlePacket(IbusPacket* packet);
+    void handlePacket(IbusPacket packet);
     void dispatchPackets();
-    void writePacket(IbusPacket* packet);
+    void writePacket(IbusPacket packet);
     void readIncoming();
     void advertiseCdPlayer();
     void sendPendingPackets();
   public:
     IbusInterface();  
     void update(unsigned long millis);
-    void send(IbusPacket *packet);
+    void send(IbusPacket packet);
 };

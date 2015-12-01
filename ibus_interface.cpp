@@ -11,10 +11,11 @@ IbusInterface::IbusInterface() {
     this->busPreviousMillis = 0;
     this->busQuietMillis = 0;
     this->currentMillis = 0;
+    this->collisionPreviousMillis = 0;
     this->receiveQueueLength = 0;
     this->awaitingSendVerification = false;
-    this->sendQueue = new QueueArray <IbusPacket *>;
-    this->dispatchQueue = new QueueArray <IbusPacket *>;
+    this->sendQueue = new QueueArray <IbusPacket>;
+    this->dispatchQueue = new QueueArray <IbusPacket>;
 }
 
 void IbusInterface::readIncoming() {
@@ -36,15 +37,16 @@ void IbusInterface::readIncoming() {
 void IbusInterface::advertiseCdPlayer() {
   if (this->cdPlayerHasBeenPolled) {
     if (this->currentMillis - this->cdPlayerPreviousMillis >= 30000 || this->cdPlayerPreviousMillis == 0) {
-      int msg[2] = IBUS_MSG_CDPLAYER_PONG;
+      phControl.println(F("advertising cd player"));
+      std::vector<int> msg = IBUS_MSG_CDPLAYER_PONG;
       IbusPacket pkt = IbusPacket(IBUS_DEV_CDPLAYER, IBUS_DEV_BROADCAST, msg);
-      this->send(&pkt);
+      this->send(pkt);
       this->cdPlayerPreviousMillis = this->currentMillis;
     }
   }
 }
 
-void IbusInterface::send(IbusPacket *packet) {
+void IbusInterface::send(IbusPacket packet) {
   this->sendQueue->push(packet);
 }
 
@@ -58,26 +60,32 @@ void IbusInterface::update(unsigned long millis) {
 
 void IbusInterface::sendPendingPackets() {
   if (!this->sendQueue->isEmpty() && this->busQuietMillis >= 11) {
-    IbusPacket *pkt = this->sendQueue->front();
-    phControl.println("writing packet");
-    phControl.println(pkt->source);
-    return;
+    if (this->awaitingSendVerification && this->currentMillis - this->collisionPreviousMillis > 200) {
+      phControl.println(F("resending missing packets"));
+      this->collisionPreviousMillis = this->currentMillis;
+    } else if (this->awaitingSendVerification) {
+      return; // don't try to resend, hasn't been long enough
+    } else {
+      phControl.println(F("sending packets"));
+      this->awaitingSendVerification = true;
+    }
+    IbusPacket pkt = this->sendQueue->front();
+    phControl.println(pkt.asString());
     this->writePacket(pkt);
-    this->awaitingSendVerification = true;
   }
 }
 
 void IbusInterface::dispatchPackets() {
   if (!this->dispatchQueue->isEmpty()) {
-    IbusPacket *pkt = this->dispatchQueue->pop();
+    IbusPacket pkt = this->dispatchQueue->pop();
+    phControl.println(F("dispatching packets"));
     // we should receive back an echo of our sent packets. Use this for 
     // confirmation that the send worked.
     if (this->awaitingSendVerification) {
-      IbusPacket *packetToVerify = this->sendQueue->front();
-      if (pkt->isEqualTo(packetToVerify)) {
+      IbusPacket packetToVerify = this->sendQueue->front();
+      if (pkt.isEqualTo(packetToVerify)) {
         this->awaitingSendVerification = false;
         this->sendQueue->pop();
-        delete packetToVerify;
       }
     } else { // this is a new packet, not an echo of one we sent
       this->handlePacket(pkt);
@@ -93,14 +101,14 @@ bool IbusInterface::parsePacket() {
        int dest = this->receiveQueue[2];
        int checksum = this->receiveQueue[this->receiveQueueLength - 1];
        int messageLength = length - 2;
-       int message[messageLength];
+       bytes message;
        for (int i = 0; i < messageLength; i++) {
-         message[i] = this->receiveQueue[3 + i];
+         message.push_back(this->receiveQueue[3 + i]);
        }
        IbusPacket packet(source, length, dest, message, checksum);
        if (packet.isValid()) {  
          this->receiveQueueLength = 0;
-         this->dispatchQueue->push(&packet);
+         this->dispatchQueue->push(packet);
          phControl.println("< " + packet.asString());
          return true;
        } 
@@ -109,29 +117,35 @@ bool IbusInterface::parsePacket() {
   return false;
 }
 
-void IbusInterface::handlePacket(IbusPacket *packet) {
-  switch (packet->source) {
+void IbusInterface::handlePacket(IbusPacket packet) {
+  phControl.println(F("handling packet"));
+  switch (packet.source) {
     case IBUS_DEV_RADIO:
-      switch(packet->destination) {
+      switch(packet.destination) {
         case IBUS_DEV_CDPLAYER:
-          int msg[1] = {0x01};
-          if (packet->messageEquals(msg)) {
+          bytes msg;
+          msg.push_back(0x01);
+          if (packet.messageEquals(msg)) {
+            phControl.println(F("detected cdplayer ping"));
             this->cdPlayerHasBeenPolled = true;
             this->advertiseCdPlayer();
           }
           break;  
       }
       break;
+    default:
+      phControl.println(F("no packet rule"));
+      phControl.println(packet.asString());
   }
-  delete packet;
 }
 
-void IbusInterface::writePacket(IbusPacket *packet) {
-    Serial.write(packet->source);
-    Serial.write(packet->length);
-    Serial.write(packet->destination);
-    for (int i = 0; i < packet->length - 2; i++) {
-      Serial.write(packet->message[i]);  
+void IbusInterface::writePacket(IbusPacket packet) {
+    phControl.println("writing packet");
+    Serial.write(packet.source);
+    Serial.write(packet.length);
+    Serial.write(packet.destination);
+    for (int i = 0; i < packet.length - 2; i++) {
+      Serial.write(packet.message[i]);  
     }
-    Serial.write(packet->checksum);
+    Serial.write(packet.checksum);
 }

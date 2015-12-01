@@ -1,6 +1,10 @@
 #ifndef IBUS_PACKET_H
 #include <Arduino.h>
+#include <StandardCplusplus.h>
+#include <vector>
 #define IBUS_PACKET_H
+
+typedef std::vector<int> bytes;
 
 
 class IbusPacket {
@@ -11,15 +15,16 @@ class IbusPacket {
     int destination;
     int length;
     int checksum;
-    int *message;
+    bytes message;
     IbusPacket();
-    IbusPacket(int source, int destination, int message[]);
-    IbusPacket(int source, int length, int destination, int message[], int checksum);
+    IbusPacket(const IbusPacket& packet);
+    IbusPacket(int source, int destination, bytes message);
+    IbusPacket(int source, int length, int destination, bytes message, int checksum);
     bool isValid();
-    bool isEqualTo(IbusPacket *pkt);
-    bool messageEquals(int message[]);
+    bool isEqualTo(IbusPacket pkt);
+    bool messageEquals(bytes message);
     String asString();
-    static int calculateChecksum(int source, int length, int destination, int message[]);    
+    static int calculateChecksum(int source, int length, int destination, bytes message);    
 };
 
 #endif

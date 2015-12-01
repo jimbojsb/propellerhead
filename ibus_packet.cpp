@@ -3,7 +3,7 @@
 IbusPacket::IbusPacket() {
 }
 
-IbusPacket::IbusPacket(int source, int destination, int message[]) {
+IbusPacket::IbusPacket(int source, int destination, std::vector<int> message) {
   this->source = source;
   this->destination = destination;
   this->message = message;
@@ -11,7 +11,7 @@ IbusPacket::IbusPacket(int source, int destination, int message[]) {
   this->checksum = IbusPacket::calculateChecksum(source, length, destination, message);
 }
 
-IbusPacket::IbusPacket(int source, int length, int destination, int message[], int checksum) {
+IbusPacket::IbusPacket(int source, int length, int destination, std::vector<int> message, int checksum) {
   this->source = source;
   this->destination = destination;
   this->message = message;
@@ -19,12 +19,20 @@ IbusPacket::IbusPacket(int source, int length, int destination, int message[], i
   this->checksum = checksum;
 }
 
+IbusPacket::IbusPacket(const IbusPacket& packet) {
+  this->source = packet.source;
+  this->destination = packet.destination;
+  this->message = packet.message;
+  this->length = packet.length;
+  this->checksum = packet.checksum;
+}
+
 bool IbusPacket::isValid() {
   return this->checksum == IbusPacket::calculateChecksum(this->source, this->length, this->destination, this->message);
 }
 
-bool IbusPacket::messageEquals(int message[]) {
-  int messageLength = sizeof(message) / sizeof(int);
+bool IbusPacket::messageEquals(bytes message) {
+  int messageLength = message.size();
   if (this->length - 2 == messageLength) {
     for (int i = 0; i < messageLength; i++) {
       if (this->message[i] != message[i]) {
@@ -35,17 +43,17 @@ bool IbusPacket::messageEquals(int message[]) {
   return true;
 }
 
-bool IbusPacket::isEqualTo(IbusPacket *pkt) {
+bool IbusPacket::isEqualTo(IbusPacket pkt) {
   bool identical = (
-    this->source == pkt->source &&
-    this->length == pkt->length &&
-    this->destination == pkt->destination &&
-    this->checksum == pkt->checksum
+    this->source == pkt.source &&
+    this->length == pkt.length &&
+    this->destination == pkt.destination &&
+    this->checksum == pkt.checksum
   );
   return identical;
 }
 
-int IbusPacket::calculateChecksum(int source, int length, int destination, int message[]) {
+int IbusPacket::calculateChecksum(int source, int length, int destination, bytes message) {
   int checksum;
   checksum ^= source;
   checksum ^= length;
